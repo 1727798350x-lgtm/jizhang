@@ -115,16 +115,24 @@
       status.innerHTML = `<span class="ok">已写入 ${transactions.length} 条示例账单，共 ${accounts.length} 个账户、${categories.length} 个分类。</span>`;
     }
 
-    seed()
-      .then(() => {
-        window.__SEED_DONE__ = true;
-      })
-      .catch((error) => {
-        window.__SEED_DONE__ = true;
-        window.__SEED_ERROR__ = error && error.message ? error.message : String(error);
-        status.innerHTML = '<span class="err">写入失败：' + (error && error.message ? error.message : error) + '</span>';
-        console.error(error);
-      });
+    const allowedHosts = ['127.0.0.1', 'localhost'];
+    const forced = new URLSearchParams(location.search).has('force');
+    if (!allowedHosts.includes(location.hostname) && !forced) {
+      status.innerHTML = '<span class="err">这是开发用的演示数据页面，普通使用不需要访问。</span>';
+      window.__SEED_DONE__ = true;
+    } else {
+      seed()
+        .then(() => {
+          window.__SEED_DONE__ = true;
+        })
+        .catch((error) => {
+          window.__SEED_DONE__ = true;
+          window.__SEED_ERROR__ = error && error.message ? error.message : String(error);
+          status.innerHTML =
+            '<span class="err">写入失败：' + (error && error.message ? error.message : error) + '</span>';
+          console.error(error);
+        });
+    }
   </script>
 </body>
 </html>

@@ -16,7 +16,13 @@ const BASE = process.env.BASE_URL || 'http://127.0.0.1:4173';
 const ROOT = process.cwd();
 const OUT_DIR = path.join(ROOT, '.preview');
 const PROFILE_DIR = path.join(OUT_DIR, 'cdp-profile');
-const VIEWPORT = { width: 390, height: 844, deviceScaleFactor: 2, mobile: true };
+const VIEWPORT = {
+  width: Number(process.env.VIEWPORT_WIDTH || 390),
+  height: Number(process.env.VIEWPORT_HEIGHT || 844),
+  deviceScaleFactor: 2,
+  mobile: true,
+};
+const SCREENSHOT_PREFIX = process.env.SCREENSHOT_PREFIX || '';
 
 const ROUTES = [
   ['detail', '#/detail'],
@@ -128,7 +134,7 @@ class CDP {
 
   async screenshot(fileName) {
     const { data } = await this.send('Page.captureScreenshot', { format: 'png' });
-    await writeFile(path.join(OUT_DIR, fileName), Buffer.from(data, 'base64'));
+    await writeFile(path.join(OUT_DIR, SCREENSHOT_PREFIX + fileName), Buffer.from(data, 'base64'));
   }
 
   errors() {
@@ -209,7 +215,7 @@ async function main() {
     });
 
     console.log('1/5 写入演示数据…');
-    await cdp.send('Page.navigate', { url: `${BASE}/dev/seed-demo.html` });
+    await cdp.send('Page.navigate', { url: `${BASE}/dev/seed-demo.html?force=1` });
     await cdp.waitForSeed();
     console.log('    演示数据就绪');
 
