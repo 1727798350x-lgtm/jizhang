@@ -14,8 +14,10 @@ const THEME_OPTIONS = [
 
 export function mount(root) {
   let categoryKind = 'expense';
+  let mounted = true;
 
   function render() {
+    if (!mounted) return;
     const settings = store.getSettings();
 
     const head = h('header', { class: 'page-head' }, h('h1', { class: 'page-title' }, '设置'));
@@ -53,7 +55,10 @@ export function mount(root) {
     );
 
     /* ---------- 账户 ---------- */
-    const accountRows = store.allAccounts().map((account) => {
+    const accountList = [...store.allAccounts()].sort(
+      (a, b) => Number(a.archived) - Number(b.archived)
+    );
+    const accountRows = accountList.map((account) => {
       const balance = store.accountBalanceCents(account.id);
       return h(
         'button',
@@ -116,9 +121,10 @@ export function mount(root) {
       )
     );
 
-    const categoryRows = store
+    const categoryList = store
       .categoriesByKind(categoryKind, { includeArchived: true })
-      .map((category) => {
+      .sort((a, b) => Number(a.archived) - Number(b.archived));
+    const categoryRows = categoryList.map((category) => {
         const count = store.countTransactionsByCategory(category.id);
         return h(
           'button',
@@ -499,5 +505,9 @@ export function mount(root) {
   }
 
   render();
-  return { unmount() {} };
+  return {
+    unmount() {
+      mounted = false;
+    },
+  };
 }

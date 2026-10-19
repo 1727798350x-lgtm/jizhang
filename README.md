@@ -16,8 +16,9 @@
 
 ```bash
 npm run dev     # 本地预览 http://localhost:4173
-npm test        # 运行单元测试
-node scripts/preview.mjs   # 无头浏览器截图 + 冒烟测试（需先 npm run dev）
+npm test        # 单元测试（统计、金额、日期工具）
+npm run e2e     # 端到端测试：真实浏览器里记账/编辑/删除/备份导入（需先 npm run dev）
+npm run preview # 无头浏览器截图 + 离线/PWA 冒烟测试（需先 npm run dev）
 ```
 
 无需安装依赖（没有第三方运行时依赖），只需要 Node.js 18+。

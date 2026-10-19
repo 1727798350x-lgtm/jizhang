@@ -6,6 +6,8 @@
   "description": "简明记账 - 本地优先的记账 PWA",
   "scripts": {
     "dev": "node dev-server.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "e2e": "node scripts/e2e.mjs",
+    "preview": "node scripts/preview.mjs"
   }
 }
