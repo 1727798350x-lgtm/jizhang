@@ -255,6 +255,30 @@ async function main() {
     console.log('    通过：深色主题生效并已恢复跟随系统');
 
     console.log('5/5 离线加载测试');
+    await cdp.evaluate(`navigator.serviceWorker.ready.then(() => true)`);
+
+    const manifestInfo = await cdp.sendWithTimeout('Page.getAppManifest', {}, 10000).catch(() => null);
+    if (manifestInfo) {
+      const manifestErrors = manifestInfo.errors || [];
+      console.log(
+        `    Manifest：${manifestInfo.url || '(无)'}，错误 ${manifestErrors.length} 个`
+      );
+      for (const error of manifestErrors) console.log('      - ' + (error.message || error));
+    }
+    const installability = await cdp
+      .sendWithTimeout('Page.getInstallabilityErrors', {}, 10000)
+      .catch(() => null);
+    const installErrors = (installability && installability.installabilityErrors) || [];
+    if (installErrors.length) {
+      console.log('    安装性提示：');
+      for (const error of installErrors) {
+        const args = (error.errorArguments || []).map((a) => a.value).join(' ');
+        console.log(`      - ${error.errorId} ${args}`);
+      }
+    } else {
+      console.log('    安装性检查：可安装');
+    }
+
     const swState = await cdp.evaluate(`(async () => {
       if (!('serviceWorker' in navigator)) return JSON.stringify({ supported: false });
       const reg = await navigator.serviceWorker.getRegistration();
