@@ -39,7 +39,7 @@ npm run preview # 无头浏览器截图 + 离线/PWA 冒烟测试（需先 npm r
 3. 仓库 **Settings → Pages → Source** 选择 `Deploy from a branch`，分支选 `main`、目录选 `/ (root)`，保存
 4. 等 1–2 分钟，访问 `https://<你的用户名>.github.io/jizhang/`
 
-> 所有资源都是相对路径，可以放心部署在子路径下。
+> 所有资源都是相对路径，可以放心部署在子路径下（已用 `/jizhang/` 子路径本地验证：Manifest、Service Worker 作用域、离线加载均正常）。
 
 ## 安装到手机
 
