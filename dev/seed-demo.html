@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>演示数据（仅开发预览用）</title>
+  <link rel="icon" href="../assets/icons/favicon-32.png" />
+  <style>
+    body { font-family: system-ui, "Microsoft YaHei", sans-serif; padding: 32px; color: #333; }
+    h1 { font-size: 18px; }
+    .ok { color: #12a150; }
+    .err { color: #ef4b4b; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>演示数据生成器</h1>
+  <p>这个页面只用于本地预览，会向当前浏览器的本地数据库写入一批示例账单。如果已有账单则不会重复写入。</p>
+  <p id="status">正在写入…</p>
+
+  <script type="module">
+    import { openDB, getAll, putMany, put } from '../js/db.js';
+    import { makeDefaultData } from '../js/model.js';
+    import { uid, pad2 } from '../js/util.js';
+
+    const status = document.getElementById('status');
+    const NOTES = ['午饭', '地铁', '咖啡', '超市采购', '外卖', '奶茶', '打车', '电影', '水果', '话费', ''];
+
+    function rand(min, max) {
+      return Math.round((min + Math.random() * (max - min)) * 100);
+    }
+
+    function pick(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    async function seed() {
+      await openDB();
+      const existing = await getAll('transactions');
+      if (existing.length > 0) {
+        status.innerHTML = '<span class="ok">数据库里已有 ' + existing.length + ' 条账单，跳过写入。</span>';
+        return;
+      }
+
+      const { accounts, categories, settings } = makeDefaultData();
+      const today = new Date();
+      const expenseCategories = categories.filter((c) => c.kind === 'expense');
+      const incomeCategories = categories.filter((c) => c.kind === 'income');
+      const salary = incomeCategories.find((c) => c.name === '工资') || incomeCategories[0];
+      const bank = accounts.find((a) => a.type === 'bank') || accounts[accounts.length - 1];
+      const wechat = accounts.find((a) => a.type === 'wechat') || accounts[0];
+
+      const transactions = [];
+      for (let offset = 5; offset >= 0; offset -= 1) {
+        const monthDate = new Date(today.getFullYear(), today.getMonth() - offset, 1);
+        const year = monthDate.getFullYear();
+        const month = monthDate.getMonth() + 1;
+        const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1;
+        const maxDay = isCurrentMonth
+          ? today.getDate()
+          : new Date(year, month, 0).getDate();
+
+        // 日常支出
+        const count = 11 + Math.floor(Math.random() * 8);
+        for (let i = 0; i < count; i += 1) {
+          const day = 1 + Math.floor(Math.random() * maxDay);
+          const category = pick(expenseCategories);
+          const date = `${year}-${pad2(month)}-${pad2(day)}`;
+          transactions.push({
+            id: uid(),
+            kind: 'expense',
+            amountCents: rand(5, 220),
+            categoryId: category.id,
+            accountId: pick(accounts).id,
+            date,
+            note: pick(NOTES),
+            createdAt: new Date(year, month - 1, day, 12, i).toISOString(),
+            updatedAt: new Date(year, month - 1, day, 12, i).toISOString(),
+          });
+        }
+
+        // 一笔住房/大额支出
+        const house = expenseCategories.find((c) => c.name === '住房') || expenseCategories[0];
+        transactions.push({
+          id: uid(),
+          kind: 'expense',
+          amountCents: rand(1800, 2600),
+          categoryId: house.id,
+          accountId: bank.id,
+          date: `${year}-${pad2(month)}-${pad2(Math.min(5, maxDay))}`,
+          note: '房租',
+          createdAt: new Date(year, month - 1, 5, 9).toISOString(),
+          updatedAt: new Date(year, month - 1, 5, 9).toISOString(),
+        });
+
+        // 工资
+        if (monthDate <= today) {
+          transactions.push({
+            id: uid(),
+            kind: 'income',
+            amountCents: 1280000,
+            categoryId: salary.id,
+            accountId: bank.id,
+            date: `${year}-${pad2(month)}-${pad2(Math.min(10, maxDay))}`,
+            note: '工资',
+            createdAt: new Date(year, month - 1, Math.min(10, maxDay), 9).toISOString(),
+            updatedAt: new Date(year, month - 1, Math.min(10, maxDay), 9).toISOString(),
+          });
+        }
+      }
+
+      await putMany('accounts', accounts);
+      await putMany('categories', categories);
+      await putMany('transactions', transactions);
+      await put('meta', { key: 'settings', value: settings });
+
+      status.innerHTML = `<span class="ok">已写入 ${transactions.length} 条示例账单，共 ${accounts.length} 个账户、${categories.length} 个分类。</span>`;
+    }
+
+    seed()
+      .then(() => {
+        window.__SEED_DONE__ = true;
+      })
+      .catch((error) => {
+        window.__SEED_DONE__ = true;
+        window.__SEED_ERROR__ = error && error.message ? error.message : String(error);
+        status.innerHTML = '<span class="err">写入失败：' + (error && error.message ? error.message : error) + '</span>';
+        console.error(error);
+      });
+  </script>
+</body>
+</html>

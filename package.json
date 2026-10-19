@@ -1,0 +1,11 @@
+{
+  "name": "jianming-ledger",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "简明记账 - 本地优先的记账 PWA",
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "test": "node --test"
+  }
+}
