@@ -592,7 +592,14 @@ h1, h2, h3, p { margin: 0; }
   gap: 10px;
   padding: 9px 0;
   font-size: 14px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
 }
+.legend-row:active { opacity: 0.65; }
 .legend-row + .legend-row { border-top: 1px solid var(--line); }
 .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .legend-name { flex: none; width: 64px; color: var(--text-2); }
@@ -837,6 +844,16 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 
 /* ===================== 补充细节 ===================== */
 .page-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.back-btn {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 2px;
+  flex: none;
+}
+.category-tx:active { background: transparent; }
 .row-title { display: block; }
 .row-sub { display: block; }
 .row-danger .row-title { color: var(--expense); }

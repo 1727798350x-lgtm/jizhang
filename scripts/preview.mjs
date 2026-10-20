@@ -226,6 +226,18 @@ async function main() {
       console.log(`    ${name}.png`);
     }
 
+    await cdp.goto('#/stats');
+    const hasLegend = await cdp.evaluate(`!!document.querySelector('.legend-row')`);
+    if (hasLegend) {
+      await cdp.evaluate(`document.querySelector('.legend-row').click()`);
+      await sleep(350);
+      await cdp.screenshot('category.png');
+      await cdp.evaluate(
+        `document.querySelector('.back-btn') && document.querySelector('.back-btn').click()`
+      );
+      console.log('    category.png（分类明细）');
+    }
+
     await cdp.goto('#/detail');
     await cdp.evaluate(`document.querySelector('.range-switch').click()`);
     await sleep(300);

@@ -8,7 +8,7 @@ import { h, fmtMoney, fmtCents, monthLabel, addMonths, monthOf, todayStr } from 
 let currentMonth = null;
 let currentKind = 'expense';
 
-export function mount(root) {
+export function mount(root, { navigate } = {}) {
   if (!currentMonth) currentMonth = monthOf(todayStr());
 
   function changeMonth(delta) {
@@ -142,8 +142,15 @@ export function mount(root) {
       for (const item of breakdown.items) {
         legend.appendChild(
           h(
-            'div',
-            { class: 'legend-row' },
+            'button',
+            {
+              class: 'legend-row',
+              type: 'button',
+              onclick: () =>
+                navigate(
+                  `#/category?id=${encodeURIComponent(item.categoryId)}&month=${currentMonth}`
+                ),
+            },
             h('span', { class: 'legend-dot', style: { background: item.color } }),
             h('span', { class: 'legend-name' }, `${item.emoji} ${item.name}`),
             h(

@@ -1,6 +1,6 @@
 /** Service Worker：离线缓存 app shell */
 
-const VERSION = 'v1.1.7';
+const VERSION = 'v1.2.0';
 const CACHE_NAME = `jianming-${VERSION}`;
 
 const ASSETS = [
@@ -20,6 +20,7 @@ const ASSETS = [
   './js/views/detail.js',
   './js/views/entry.js',
   './js/views/stats.js',
+  './js/views/category.js',
   './js/views/settings.js',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',

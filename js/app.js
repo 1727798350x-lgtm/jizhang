@@ -6,11 +6,13 @@ import { h } from './util.js';
 import * as detail from './views/detail.js';
 import * as entry from './views/entry.js';
 import * as stats from './views/stats.js';
+import * as category from './views/category.js';
 import * as settings from './views/settings.js';
 
 const ROUTES = [
   { path: '/detail', view: detail, tab: 'detail' },
   { path: '/stats', view: stats, tab: 'stats' },
+  { path: '/category', view: category, tab: 'stats', hideFab: true },
   { path: '/settings', view: settings, tab: 'settings', hideFab: true },
   { path: '/entry', view: entry, fullscreen: true },
 ];
