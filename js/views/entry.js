@@ -38,11 +38,7 @@ export function mount(root, { navigate, query }) {
       editing ? '返回' : '取消'
     ),
     kindSeg,
-    h(
-      'button',
-      { class: 'text-btn right', type: 'button', onclick: save },
-      editing ? '保存' : '保存'
-    )
+    h('span', { class: 'entry-head-spacer', 'aria-hidden': 'true' })
   );
 
   /* ---------- 金额 ---------- */
@@ -108,8 +104,24 @@ export function mount(root, { navigate, query }) {
     );
   }
 
+  /* ---------- 保存（数字键盘上方） ---------- */
+  const submitBar = h(
+    'div',
+    { class: 'entry-submit' },
+    h('button', { class: 'btn btn-primary btn-block', type: 'button', onclick: save }, '保存')
+  );
+
   /* ---------- 渲染 ---------- */
-  const entry = h('div', { class: 'entry' }, head, amountRow, chipsRow, entryBody, keypad);
+  const entry = h(
+    'div',
+    { class: 'entry' },
+    head,
+    amountRow,
+    chipsRow,
+    entryBody,
+    submitBar,
+    keypad
+  );
   root.appendChild(entry);
 
   refreshAmount();

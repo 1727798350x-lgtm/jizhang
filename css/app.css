@@ -400,6 +400,7 @@ h1, h2, h3, p { margin: 0; }
 }
 .entry-head .text-btn.right { text-align: right; color: var(--primary); font-weight: 600; }
 .entry-head .text-btn.danger { color: var(--expense); }
+.entry-head-spacer { flex: none; width: 48px; }
 
 .entry-amount {
   flex: none;
@@ -525,6 +526,13 @@ h1, h2, h3, p { margin: 0; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.entry-submit {
+  flex: none;
+  padding: 6px 12px 8px;
+  background: var(--bg);
+}
+.entry-submit .btn { height: 46px; }
 
 .keypad {
   flex: none;

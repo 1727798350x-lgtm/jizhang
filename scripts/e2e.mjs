@@ -318,7 +318,7 @@ async function main() {
     })()`);
     assert.equal(noteValue, '测试备注');
     await pressKeys(cdp, ['1', '2', '.', '3', '4']);
-    await clickByText(cdp, '.entry-head button', '保存');
+    await clickByText(cdp, '.entry-submit button', '保存');
     await waitSelector(cdp, '.tx-item');
     await waitUntil(cdp, `document.body.textContent.includes('12.34')`, '支出出现在明细');
     await waitUntil(cdp, `document.body.textContent.includes('测试备注')`, '备注直接写入成功');
@@ -339,7 +339,7 @@ async function main() {
     await waitSelector(cdp, '.keypad');
     await clickByText(cdp, '.seg button', '收入');
     await pressKeys(cdp, ['5', '0', '0', '0']);
-    await clickByText(cdp, '.entry-head button', '保存');
+    await clickByText(cdp, '.entry-submit button', '保存');
     await waitUntil(cdp, `document.body.textContent.includes('5,000.00')`, '收入出现在明细');
     await expectTotals(cdp, { expense: '¥12.34', income: '¥5,000.00', balance: '¥4,987.66' });
     await waitUntil(cdp, `document.body.textContent.includes('总 ¥4,987.66')`, '收入后的总余额');
@@ -349,7 +349,7 @@ async function main() {
     await clickByText(cdp, '.tx-item', '12.34', false);
     await waitSelector(cdp, '.keypad');
     await pressKeys(cdp, ['⌫', '⌫', '⌫', '⌫', '⌫', '8', '8', '.', '8']);
-    await clickByText(cdp, '.entry-head button', '保存');
+    await clickByText(cdp, '.entry-submit button', '保存');
     await waitUntil(cdp, `document.body.textContent.includes('88.80')`, '修改后的金额');
     await expectTotals(cdp, { expense: '¥88.80', income: '¥5,000.00', balance: '¥4,911.20' });
     await waitUntil(cdp, `document.body.textContent.includes('总 ¥4,911.20')`, '编辑后的总余额');
@@ -482,7 +482,7 @@ async function main() {
     await clickByText(cdp, '.fab', '');
     await waitSelector(cdp, '.keypad');
     await pressKeys(cdp, ['1']);
-    await clickByText(cdp, '.entry-head button', '保存');
+    await clickByText(cdp, '.entry-submit button', '保存');
     await waitUntil(cdp, `document.querySelectorAll('.tx-item').length === 2`, '新增第二条记录');
 
     await go(cdp, '#/settings');

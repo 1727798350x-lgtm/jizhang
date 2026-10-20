@@ -238,7 +238,7 @@ async function main() {
     const savedHash = await cdp.evaluate(`(async () => {
       const keypad = (t) => [...document.querySelectorAll('.keypad button')].find((b) => (b.textContent || '').trim() === t);
       for (const k of ['1', '2', '.', '3', '4']) keypad(k).click();
-      const save = [...document.querySelectorAll('.entry-head button')].find((b) => (b.textContent || '').trim() === '保存');
+      const save = [...document.querySelectorAll('.entry-submit button')].find((b) => (b.textContent || '').trim() === '保存');
       save.click();
       await new Promise((r) => setTimeout(r, 900));
       return location.hash;
