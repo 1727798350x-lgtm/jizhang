@@ -436,6 +436,22 @@ h1, h2, h3, p { margin: 0; }
   background: transparent;
 }
 
+.chip-input {
+  flex: 1;
+  min-width: 90px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 14px;
+  font-size: 13px;
+  box-shadow: 0 1px 3px rgba(20, 23, 31, 0.05);
+  outline: none;
+}
+.chip-input::placeholder { color: var(--text-3); }
+.chip-input:focus { box-shadow: 0 0 0 2px var(--primary-soft); }
+
 .entry-body {
   flex: 1;
   min-height: 0;

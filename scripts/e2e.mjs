@@ -303,17 +303,25 @@ async function main() {
     const chipTexts = await cdp.evaluate(
       `[...document.querySelectorAll('.entry-chips .chip')].map((el) => (el.textContent || '').trim())`
     );
-    assert.equal(chipTexts.length, 2, '记账页只应保留日期和备注两个入口');
+    assert.equal(chipTexts.length, 1, '记账页只应保留日期入口');
     assert.ok(chipTexts[0].includes('今天'), '缺少日期入口');
-    assert.ok(chipTexts[1].includes('备注'), '缺少备注入口');
     assert.ok(
       !chipTexts.some((text) => text.includes('现金') || text.includes('余额')),
       '记账页不应再有账户/余额入口'
     );
+    await waitSelector(cdp, '.entry-chips .chip-input');
+    const noteValue = await cdp.evaluate(`(() => {
+      const input = document.querySelector('.entry-chips .chip-input');
+      input.value = '测试备注';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return input.value;
+    })()`);
+    assert.equal(noteValue, '测试备注');
     await pressKeys(cdp, ['1', '2', '.', '3', '4']);
     await clickByText(cdp, '.entry-head button', '保存');
     await waitSelector(cdp, '.tx-item');
     await waitUntil(cdp, `document.body.textContent.includes('12.34')`, '支出出现在明细');
+    await waitUntil(cdp, `document.body.textContent.includes('测试备注')`, '备注直接写入成功');
     await expectTotals(cdp, { expense: '¥12.34', income: '¥0.00', balance: '-¥12.34' });
     await waitUntil(
       cdp,
@@ -408,6 +416,7 @@ async function main() {
     assert.equal(parsed.app, 'jianming-ledger');
     assert.equal(parsed.data.transactions.length, 1);
     assert.equal(parsed.data.transactions[0].amountCents, 8880);
+    assert.equal(parsed.data.transactions[0].note, '测试备注');
     assert.equal(parsed.data.transactions[0].balanceAfterCents, null, '不应再有手填余额');
     assert.ok(parsed.data.accounts.some((a) => a.name === '测试卡'), '备份缺少新账户');
     assert.ok(

@@ -66,13 +66,15 @@ export function mount(root, { navigate, query }) {
   });
   const dateChip = h('label', { class: 'chip' }, h('span', {}, '📅'), dateText, dateInput);
 
-  const noteText = h('span', { class: 'chip-text' }, '备注');
-  const noteChip = h(
-    'button',
-    { class: 'chip', type: 'button', onclick: openNoteSheet },
-    h('span', {}, '📝'),
-    noteText
-  );
+  const noteInput = h('input', {
+    class: 'chip-input',
+    type: 'text',
+    placeholder: '备注（选填）',
+    maxlength: '100',
+    value: note,
+    'aria-label': '备注',
+    enterkeyhint: 'done',
+  });
 
   const deleteChip = editing
     ? h(
@@ -83,7 +85,7 @@ export function mount(root, { navigate, query }) {
       )
     : null;
 
-  const chipsRow = h('div', { class: 'entry-chips' }, dateChip, noteChip, deleteChip);
+  const chipsRow = h('div', { class: 'entry-chips' }, dateChip, noteInput, deleteChip);
 
   /* ---------- 分类 ---------- */
   const catContainer = h('div');
@@ -115,7 +117,6 @@ export function mount(root, { navigate, query }) {
   refreshKind();
   refreshCategories();
   refreshDateChip();
-  refreshNoteChip();
 
   /* ---------- 交互函数 ---------- */
   function press(key) {
@@ -215,36 +216,6 @@ export function mount(root, { navigate, query }) {
     dateInput.value = date;
   }
 
-  function refreshNoteChip() {
-    noteText.textContent = note ? note : '备注';
-    noteChip.classList.toggle('has-note', Boolean(note));
-  }
-
-  function openNoteSheet() {
-    const textarea = h('textarea', {
-      class: 'input',
-      rows: '3',
-      maxlength: '100',
-      placeholder: '写点什么（最多 100 字）',
-      value: note,
-    });
-    const done = h(
-      'button',
-      {
-        class: 'btn btn-primary btn-block',
-        type: 'button',
-        onclick: () => {
-          note = textarea.value.trim().slice(0, 100);
-          refreshNoteChip();
-          sheet.close();
-        },
-      },
-      '完成'
-    );
-    const sheet = ui.showSheet({ title: '备注', content: [textarea, done] });
-    setTimeout(() => textarea.focus(), 60);
-  }
-
   async function deleteEntry() {
     const confirmed = await ui.confirmDialog({
       title: '删除这笔记录',
@@ -286,7 +257,7 @@ export function mount(root, { navigate, query }) {
         categoryId,
         accountId,
         date,
-        note,
+        note: noteInput.value.trim().slice(0, 100),
         balanceAfterCents:
           editing && Number.isInteger(editing.balanceAfterCents) ? editing.balanceAfterCents : null,
       });
