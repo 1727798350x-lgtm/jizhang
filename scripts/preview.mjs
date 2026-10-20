@@ -226,6 +226,13 @@ async function main() {
       console.log(`    ${name}.png`);
     }
 
+    await cdp.goto('#/detail');
+    await cdp.evaluate(`document.querySelector('.range-switch').click()`);
+    await sleep(300);
+    await cdp.screenshot('range.png');
+    await cdp.evaluate(`document.querySelector('.sheet-close').click()`);
+    console.log('    range.png（时间段选择弹层）');
+
     console.log('3/5 交互冒烟：记一笔 → 明细出现');
     await cdp.goto('#/entry');
     const savedHash = await cdp.evaluate(`(async () => {
