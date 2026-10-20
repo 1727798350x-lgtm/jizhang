@@ -124,9 +124,8 @@ export function mount(root, { navigate, query }) {
 
 function txItem(tx, navigate) {
   const category = store.categoryById(tx.categoryId);
-  const account = store.accountById(tx.accountId);
   const sign = tx.kind === 'expense' ? '-' : '+';
-  const sub = [tx.note, account ? account.name : null].filter(Boolean).join(' · ');
+  const sub = tx.note && tx.note.trim() ? tx.note.trim() : null;
   const balance = store.runningBalanceCents(tx.id);
   const manual = Number.isInteger(tx.balanceAfterCents);
 

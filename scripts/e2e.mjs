@@ -322,6 +322,10 @@ async function main() {
     await waitSelector(cdp, '.tx-item');
     await waitUntil(cdp, `document.body.textContent.includes('12.34')`, '支出出现在明细');
     await waitUntil(cdp, `document.body.textContent.includes('测试备注')`, '备注直接写入成功');
+    assert.ok(
+      !(await cdp.evaluate(`document.body.textContent.includes('现金')`)),
+      '明细副标题不应再显示账户名'
+    );
     await expectTotals(cdp, { expense: '¥12.34', income: '¥0.00', balance: '-¥12.34' });
     await waitUntil(
       cdp,
