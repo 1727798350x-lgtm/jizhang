@@ -13,6 +13,20 @@ const state = {
   settings: { ...model.DEFAULT_SETTINGS },
 };
 
+let runningBalanceCache = null;
+
+function invalidateRunningBalances() {
+  runningBalanceCache = null;
+}
+
+export function runningBalanceCents(transactionId) {
+  if (!runningBalanceCache) {
+    runningBalanceCache = stats.computeRunningBalances(state.accounts, state.transactions);
+  }
+  const value = runningBalanceCache.get(transactionId);
+  return Number.isInteger(value) ? value : null;
+}
+
 export function getState() {
   return state;
 }
@@ -149,6 +163,7 @@ export async function saveTransaction(input) {
     categoryId: input.categoryId,
     date: input.date,
     note: (input.note || '').trim().slice(0, 100),
+    balanceAfterCents: Number.isInteger(input.balanceAfterCents) ? input.balanceAfterCents : null,
     createdAt: existing ? existing.createdAt : now,
     updatedAt: now,
   };
@@ -161,6 +176,7 @@ export async function saveTransaction(input) {
   if (index >= 0) state.transactions[index] = tx;
   else state.transactions.push(tx);
   state.transactions = sortTransactions(state.transactions);
+  invalidateRunningBalances();
   return tx;
 }
 
@@ -169,6 +185,7 @@ export async function removeTransaction(id) {
   if (!existing) throw new Error('这笔记录不存在或已被删除');
   await db.del('transactions', id);
   state.transactions = state.transactions.filter((t) => t.id !== id);
+  invalidateRunningBalances();
 }
 
 /* ---------------- 账户 ---------------- */
@@ -199,6 +216,7 @@ export async function saveAccount(input) {
   if (index >= 0) state.accounts[index] = account;
   else state.accounts.push(account);
   state.accounts = sortByOrder(state.accounts);
+  invalidateRunningBalances();
 
   if (!state.settings.defaultAccountId && !account.archived) {
     await updateSettings({ defaultAccountId: account.id });
@@ -316,7 +334,10 @@ export async function importBackup(backup) {
       t.amountCents > 0 &&
       typeof t.date === 'string' &&
       util.DATE_RE.test(t.date) &&
-      (t.kind === 'expense' || t.kind === 'income')
+      (t.kind === 'expense' || t.kind === 'income') &&
+      (t.balanceAfterCents === undefined ||
+        t.balanceAfterCents === null ||
+        (Number.isInteger(t.balanceAfterCents) && Math.abs(t.balanceAfterCents) <= 99_999_999_99))
   );
   if (!validAccounts || !validCategories || !validTransactions) {
     throw new Error('备份文件内容不合法，已取消导入');
@@ -332,6 +353,7 @@ export async function importBackup(backup) {
   state.accounts = sortByOrder(accounts);
   state.categories = sortByOrder(categories);
   state.transactions = sortTransactions(transactions);
+  invalidateRunningBalances();
   state.settings = mergedSettings;
   if (!state.accounts.some((a) => a.id === state.settings.defaultAccountId)) {
     const first = state.accounts.find((a) => !a.archived) || state.accounts[0];
@@ -350,6 +372,7 @@ export async function resetData() {
   state.accounts = sortByOrder(seed.accounts);
   state.categories = sortByOrder(seed.categories);
   state.transactions = [];
+  invalidateRunningBalances();
   state.settings = { ...seed.settings };
   return state;
 }

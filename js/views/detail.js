@@ -127,6 +127,8 @@ function txItem(tx, navigate) {
   const account = store.accountById(tx.accountId);
   const sign = tx.kind === 'expense' ? '-' : '+';
   const sub = [tx.note, account ? account.name : null].filter(Boolean).join(' · ');
+  const balance = store.runningBalanceCents(tx.id);
+  const manual = Number.isInteger(tx.balanceAfterCents);
 
   return h(
     'button',
@@ -144,10 +146,24 @@ function txItem(tx, navigate) {
     ),
     h(
       'span',
-      {
-        class: 'tx-amount num ' + (tx.kind === 'expense' ? 'money-expense' : 'money-income'),
-      },
-      `${sign}¥${fmtCents(tx.amountCents)}`
+      { class: 'tx-right' },
+      h(
+        'span',
+        {
+          class: 'tx-amount num ' + (tx.kind === 'expense' ? 'money-expense' : 'money-income'),
+        },
+        `${sign}¥${fmtCents(tx.amountCents)}`
+      ),
+      balance === null
+        ? null
+        : h(
+            'span',
+            {
+              class: 'tx-balance num' + (manual ? ' manual' : ''),
+              title: manual ? '手动填写的余额' : '自动计算的余额',
+            },
+            `余 ${fmtMoney(balance)}`
+          )
     )
   );
 }

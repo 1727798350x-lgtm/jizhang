@@ -314,6 +314,20 @@ h1, h2, h3, p { margin: 0; }
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.tx-right {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.tx-balance {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tx-balance.manual { color: var(--primary); }
 
 /* ===================== 分段控件 ===================== */
 .seg {
@@ -784,6 +798,7 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 .row .badge { font-weight: 400; }
 .chip-danger { color: var(--expense); }
 .chip.has-note { color: var(--primary); }
+.chip.is-set { color: var(--primary); }
 .stats-kind { margin-bottom: 14px; }
 
 /* ===================== 桌面适配 ===================== */

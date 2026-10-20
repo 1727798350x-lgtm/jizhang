@@ -287,7 +287,7 @@ async function main() {
       await cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: DOWNLOAD_DIR });
     }
 
-    console.log('1/9 打开应用，检查空状态');
+    console.log('1/10 打开应用，检查空状态');
     await cdp.send('Page.navigate', { url: `${BASE}/#/detail` });
     await waitApp(cdp);
     await waitSelector(cdp, '.empty');
@@ -297,7 +297,7 @@ async function main() {
     );
     console.log('    通过：空状态正常');
 
-    console.log('2/9 记一笔支出 12.34');
+    console.log('2/10 记一笔支出 12.34');
     await go(cdp, '#/entry');
     await waitSelector(cdp, '.keypad');
     await pressKeys(cdp, ['1', '2', '.', '3', '4']);
@@ -305,9 +305,26 @@ async function main() {
     await waitSelector(cdp, '.tx-item');
     await waitUntil(cdp, `document.body.textContent.includes('12.34')`, '支出出现在明细');
     await expectTotals(cdp, { expense: '¥12.34', income: '¥0.00', balance: '-¥12.34' });
-    console.log('    通过：支出已保存并计入汇总');
+    await waitUntil(
+      cdp,
+      `document.querySelector('.tx-balance') && document.querySelector('.tx-balance').textContent.includes('-¥12.34')`,
+      '自动计算的余额'
+    );
+    console.log('    通过：支出已保存，并显示自动余额');
 
-    console.log('3/9 记一笔收入 5000');
+    console.log('3/10 手动填写这笔记录的余额 1000.00');
+    await clickByText(cdp, '.tx-item', '12.34', false);
+    await waitSelector(cdp, '.keypad');
+    await clickByText(cdp, '.entry-chips .chip', '余额', false);
+    await waitSelector(cdp, '.sheet');
+    await setSheetInputs(cdp, ['1000.00']);
+    await clickByText(cdp, '.sheet .btn', '完成');
+    await waitSheetClosed(cdp);
+    await clickByText(cdp, '.entry-head button', '保存');
+    await waitUntil(cdp, `document.body.textContent.includes('余 ¥1,000.00')`, '手动余额显示');
+    console.log('    通过：手动余额生效');
+
+    console.log('4/10 记一笔收入 5000');
     await go(cdp, '#/entry');
     await waitSelector(cdp, '.keypad');
     await clickByText(cdp, '.seg button', '收入');
@@ -315,9 +332,10 @@ async function main() {
     await clickByText(cdp, '.entry-head button', '保存');
     await waitUntil(cdp, `document.body.textContent.includes('5,000.00')`, '收入出现在明细');
     await expectTotals(cdp, { expense: '¥12.34', income: '¥5,000.00', balance: '¥4,987.66' });
-    console.log('    通过：收入已保存，结余计算正确');
+    await waitUntil(cdp, `document.body.textContent.includes('余 ¥6,000.00')`, '收入后的余额');
+    console.log('    通过：收入已保存，余额从手填值继续推算');
 
-    console.log('4/9 编辑支出：12.34 → 88.80');
+    console.log('5/10 编辑支出：12.34 → 88.80');
     await clickByText(cdp, '.tx-item', '12.34', false);
     await waitSelector(cdp, '.keypad');
     await pressKeys(cdp, ['⌫', '⌫', '⌫', '⌫', '⌫', '8', '8', '.', '8']);
@@ -326,7 +344,7 @@ async function main() {
     await expectTotals(cdp, { expense: '¥88.80', income: '¥5,000.00', balance: '¥4,911.20' });
     console.log('    通过：编辑生效');
 
-    console.log('5/9 删除收入 5000');
+    console.log('6/10 删除收入 5000');
     await clickByText(cdp, '.tx-item', '5,000.00', false);
     await waitSelector(cdp, '.keypad');
     await clickByText(cdp, '.chip', '删除', false);
@@ -334,6 +352,7 @@ async function main() {
     await clickByText(cdp, '.dialog .btn', '删除');
     await waitUntil(cdp, `!document.body.textContent.includes('5,000.00')`, '收入被删除');
     await expectTotals(cdp, { expense: '¥88.80', income: '¥0.00', balance: '-¥88.80' });
+    await waitUntil(cdp, `document.body.textContent.includes('余 ¥1,000.00')`, '删除后的余额');
     assert.equal(
       await cdp.evaluate(`document.querySelectorAll('.tx-item').length`),
       1,
@@ -341,7 +360,7 @@ async function main() {
     );
     console.log('    通过：删除生效');
 
-    console.log('6/9 添加账户与分类');
+    console.log('7/10 添加账户与分类');
     await go(cdp, '#/settings');
     await waitSelector(cdp, '.section');
     await clickByText(cdp, '.row', '添加账户', false);
@@ -359,7 +378,7 @@ async function main() {
     await waitUntil(cdp, `document.body.textContent.includes('宠物')`, '新分类出现');
     console.log('    通过：账户、分类创建成功');
 
-    console.log('7/9 归档分类');
+    console.log('8/10 归档分类');
     await clickByText(cdp, '.row', '宠物', false);
     await waitSelector(cdp, '.sheet');
     await clickByText(cdp, '.sheet .btn', '归档分类');
@@ -373,13 +392,14 @@ async function main() {
     );
     console.log('    通过：归档生效');
 
-    console.log('8/9 导出备份并校验内容');
+    console.log('9/10 导出备份并校验内容');
     await clickByText(cdp, '.row', '导出备份', false);
     const backup = await downloadJSON();
     const parsed = JSON.parse(backup.content);
     assert.equal(parsed.app, 'jianming-ledger');
     assert.equal(parsed.data.transactions.length, 1);
     assert.equal(parsed.data.transactions[0].amountCents, 8880);
+    assert.equal(parsed.data.transactions[0].balanceAfterCents, 100000, '备份缺少手填余额');
     assert.ok(parsed.data.accounts.some((a) => a.name === '测试卡'), '备份缺少新账户');
     assert.ok(
       parsed.data.categories.some((c) => c.name === '宠物' && c.archived === true),
@@ -387,7 +407,7 @@ async function main() {
     );
     console.log(`    通过：${backup.name}（${backup.content.length} 字节）`);
 
-    console.log('9/9 导入备份覆盖数据');
+    console.log('10/10 导入备份覆盖数据');
     await go(cdp, '#/detail');
     await clickByText(cdp, '.fab', '');
     await waitSelector(cdp, '.keypad');
@@ -423,7 +443,7 @@ async function main() {
       for (const message of errors) console.log('  - ' + message);
       process.exitCode = 1;
     } else {
-      console.log('\n全部 9 个场景通过，控制台无错误');
+      console.log('\n全部 10 个场景通过，控制台无错误');
     }
   } finally {
     if (ws) {

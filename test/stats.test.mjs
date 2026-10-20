@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { monthTotals, groupByDay, categoryBreakdown, monthlyTrend } from '../js/stats.js';
+import { monthTotals, groupByDay, categoryBreakdown, monthlyTrend, computeRunningBalances } from '../js/stats.js';
 
 const categories = [
   { id: 'c-food', kind: 'expense', name: '餐饮', emoji: '🍜', color: '#ff7a59' },
@@ -96,4 +96,48 @@ test('monthlyTrend 跨年连续', () => {
     trend.map((t) => t.month),
     ['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02']
   );
+});
+
+const accountA = { id: 'acc-a', name: '现金', initialBalanceCents: 10000, archived: false };
+const accountB = { id: 'acc-b', name: '微信', initialBalanceCents: 0, archived: false };
+
+test('computeRunningBalances 按账户累计余额', () => {
+  const txs = [
+    { id: 'x1', kind: 'expense', amountCents: 1234, accountId: 'acc-a', date: '2026-10-01', createdAt: '2026-10-01T01:00:00.000Z' },
+    { id: 'x2', kind: 'income', amountCents: 50000, accountId: 'acc-a', date: '2026-10-02', createdAt: '2026-10-02T01:00:00.000Z' },
+    { id: 'y1', kind: 'income', amountCents: 2000, accountId: 'acc-b', date: '2026-10-01', createdAt: '2026-10-01T02:00:00.000Z' },
+  ];
+  const map = computeRunningBalances([accountA, accountB], txs);
+  assert.equal(map.get('x1'), 10000 - 1234);
+  assert.equal(map.get('x2'), 10000 - 1234 + 50000);
+  assert.equal(map.get('y1'), 2000);
+});
+
+test('computeRunningBalances 手填余额作为锚点', () => {
+  const txs = [
+    { id: 'a', kind: 'expense', amountCents: 100, accountId: 'acc-a', date: '2026-10-01', createdAt: '1' },
+    { id: 'b', kind: 'expense', amountCents: 200, accountId: 'acc-a', date: '2026-10-02', createdAt: '2', balanceAfterCents: 5000 },
+    { id: 'c', kind: 'expense', amountCents: 300, accountId: 'acc-a', date: '2026-10-03', createdAt: '3' },
+  ];
+  const map = computeRunningBalances([accountA], txs);
+  assert.equal(map.get('a'), 9900);
+  assert.equal(map.get('b'), 5000);
+  assert.equal(map.get('c'), 4700);
+});
+
+test('computeRunningBalances 同日按创建时间排序且支持负余额', () => {
+  const txs = [
+    { id: 'late', kind: 'expense', amountCents: 200, accountId: 'acc-b', date: '2026-10-01', createdAt: '2026-10-01T10:00:00.000Z' },
+    { id: 'early', kind: 'expense', amountCents: 100, accountId: 'acc-b', date: '2026-10-01', createdAt: '2026-10-01T01:00:00.000Z' },
+  ];
+  const map = computeRunningBalances([accountB], txs);
+  assert.equal(map.get('early'), -100);
+  assert.equal(map.get('late'), -300);
+});
+
+test('computeRunningBalances 忽略未知账户的记录', () => {
+  const map = computeRunningBalances([accountA], [
+    { id: 'z', kind: 'expense', amountCents: 100, accountId: 'ghost', date: '2026-10-01' },
+  ]);
+  assert.equal(map.has('z'), false);
 });

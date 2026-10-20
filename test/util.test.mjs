@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   parseAmountToCents,
+  parseSignedAmountToCents,
   fmtCents,
   fmtMoney,
   centsToInput,
@@ -65,4 +66,15 @@ test('dayLabel 今天/昨天/历史日期', () => {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   assert.equal(dayLabel(today), '今天');
   assert.equal(dayLabel('2020-01-01'), '2020年1月1日 周三');
+});
+
+test('parseSignedAmountToCents 支持负数余额与空值', () => {
+  assert.equal(parseSignedAmountToCents('1234.56'), 123456);
+  assert.equal(parseSignedAmountToCents('-50'), -5000);
+  assert.equal(parseSignedAmountToCents('-0.5'), -50);
+  assert.equal(parseSignedAmountToCents('0'), 0);
+  assert.equal(parseSignedAmountToCents(''), null);
+  assert.equal(parseSignedAmountToCents('-'), null);
+  assert.equal(parseSignedAmountToCents('abc'), null);
+  assert.equal(parseSignedAmountToCents('1.234'), null);
 });

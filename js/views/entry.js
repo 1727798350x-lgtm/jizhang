@@ -1,7 +1,17 @@
 /** 记一笔 / 编辑记录 */
 
 import * as store from '../store.js';
-import { h, fmtCents, fmtMoney, parseAmountToCents, centsToInput, todayStr, isValidDate, monthOf } from '../util.js';
+import {
+  h,
+  fmtCents,
+  fmtMoney,
+  parseAmountToCents,
+  parseSignedAmountToCents,
+  centsToInput,
+  todayStr,
+  isValidDate,
+  monthOf,
+} from '../util.js';
 import * as ui from '../ui.js';
 
 export function mount(root, { navigate, query }) {
@@ -16,6 +26,9 @@ export function mount(root, { navigate, query }) {
       : store.getSettings().defaultAccountId || store.activeAccounts()[0]?.id || null;
   let date = editing ? editing.date : todayStr();
   let note = editing ? editing.note || '' : '';
+  let balanceAfterCents = editing && Number.isInteger(editing.balanceAfterCents)
+    ? editing.balanceAfterCents
+    : null;
   let saving = false;
 
   /* ---------- 顶部 ---------- */
@@ -65,6 +78,14 @@ export function mount(root, { navigate, query }) {
   });
   const dateChip = h('label', { class: 'chip' }, h('span', {}, '📅'), dateText, dateInput);
 
+  const balanceText = h('span', { class: 'chip-text' }, '余额');
+  const balanceChip = h(
+    'button',
+    { class: 'chip', type: 'button', onclick: openBalanceSheet },
+    h('span', {}, '💰'),
+    balanceText
+  );
+
   const noteText = h('span', { class: 'chip-text' }, '备注');
   const noteChip = h(
     'button',
@@ -82,7 +103,15 @@ export function mount(root, { navigate, query }) {
       )
     : null;
 
-  const chipsRow = h('div', { class: 'entry-chips' }, accountChip, dateChip, noteChip, deleteChip);
+  const chipsRow = h(
+    'div',
+    { class: 'entry-chips' },
+    accountChip,
+    dateChip,
+    balanceChip,
+    noteChip,
+    deleteChip
+  );
 
   /* ---------- 分类 ---------- */
   const catContainer = h('div');
@@ -115,6 +144,7 @@ export function mount(root, { navigate, query }) {
   refreshCategories();
   refreshAccountChip();
   refreshDateChip();
+  refreshBalanceChip();
   refreshNoteChip();
 
   /* ---------- 交互函数 ---------- */
@@ -228,6 +258,12 @@ export function mount(root, { navigate, query }) {
     noteChip.classList.toggle('has-note', Boolean(note));
   }
 
+  function refreshBalanceChip() {
+    const manual = Number.isInteger(balanceAfterCents);
+    balanceText.textContent = manual ? `余额 ${fmtCents(balanceAfterCents)}` : '余额';
+    balanceChip.classList.toggle('is-set', manual);
+  }
+
   function openAccountPicker() {
     const list = h('div', { class: 'pick-list' });
     const accounts = store.activeAccounts();
@@ -287,6 +323,62 @@ export function mount(root, { navigate, query }) {
     setTimeout(() => textarea.focus(), 60);
   }
 
+  function openBalanceSheet() {
+    const input = h('input', {
+      class: 'input',
+      type: 'text',
+      inputmode: 'decimal',
+      placeholder: '留空表示自动计算，例如 1234.56',
+      value: Number.isInteger(balanceAfterCents) ? centsToInput(balanceAfterCents) : '',
+    });
+    const hint = h(
+      'p',
+      { class: 'faint', style: { fontSize: '12px', lineHeight: '1.6', marginBottom: '10px' } },
+      '填写这笔记录之后的账户余额；留空则自动计算。填写后，后面的记录会从你填的余额继续推算。账户初始余额可在「设置 → 账户」里修改。'
+    );
+    const done = h(
+      'button',
+      {
+        class: 'btn btn-primary btn-block',
+        type: 'button',
+        onclick: () => {
+          const raw = input.value.trim();
+          if (!raw) {
+            balanceAfterCents = null;
+          } else {
+            const cents = parseSignedAmountToCents(raw);
+            if (cents === null) {
+              ui.toast('余额格式不正确');
+              return;
+            }
+            balanceAfterCents = cents;
+          }
+          refreshBalanceChip();
+          sheet.close();
+        },
+      },
+      '完成'
+    );
+    const clear = Number.isInteger(balanceAfterCents)
+      ? h(
+          'button',
+          {
+            class: 'btn btn-ghost btn-block',
+            type: 'button',
+            style: { marginTop: '10px' },
+            onclick: () => {
+              balanceAfterCents = null;
+              refreshBalanceChip();
+              sheet.close();
+            },
+          },
+          '清除，改为自动计算'
+        )
+      : null;
+    const sheet = ui.showSheet({ title: '记录后余额', content: [hint, input, done, clear] });
+    setTimeout(() => input.focus(), 60);
+  }
+
   async function deleteEntry() {
     const confirmed = await ui.confirmDialog({
       title: '删除这笔记录',
@@ -329,6 +421,7 @@ export function mount(root, { navigate, query }) {
         accountId,
         date,
         note,
+        balanceAfterCents,
       });
       ui.toast(editing ? '已保存' : '已记一笔');
       navigate('#/detail?m=' + monthOf(date));

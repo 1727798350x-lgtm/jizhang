@@ -39,6 +39,18 @@ export function parseAmountToCents(input) {
   return Number.isFinite(cents) ? cents : null;
 }
 
+/** 余额输入：允许负数；空字符串返回 null（调用方用它表示“自动计算”） */
+export function parseSignedAmountToCents(input) {
+  const s = String(input ?? '').trim();
+  if (s === '') return null;
+  const neg = s.startsWith('-');
+  const body = neg ? s.slice(1) : s;
+  if (!/^\d*(\.\d{0,2})?$/.test(body) || body === '' || body === '.') return null;
+  const cents = parseAmountToCents(body);
+  if (cents === null) return null;
+  return neg ? -cents : cents;
+}
+
 /** 整数分 -> 编辑用字符串，如 1230 -> "12.30" */
 export function centsToInput(cents) {
   return (Math.round(Number(cents) || 0) / 100).toFixed(2);

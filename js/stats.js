@@ -76,6 +76,40 @@ export function categoryBreakdown(transactions, categories, kind, month = null) 
 }
 
 /**
+ * 计算每笔记录之后该账户的余额（含手动填写的余额锚点）
+ * 规则：按日期、创建时间升序；默认 = 上一笔余额 + 本笔收支；
+ * 若本笔手动填写了余额，则以手填余额为准，后续继续从它推算。
+ * @returns {Map<string, number>} transactionId -> 余额（分）
+ */
+export function computeRunningBalances(accounts, transactions) {
+  const byAccount = new Map();
+  for (const account of accounts) byAccount.set(account.id, []);
+  for (const tx of transactions) {
+    const list = byAccount.get(tx.accountId);
+    if (list) list.push(tx);
+  }
+
+  const result = new Map();
+  for (const [accountId, list] of byAccount) {
+    const account = accounts.find((a) => a.id === accountId);
+    if (!account) continue;
+    const sorted = [...list].sort(
+      (a, b) =>
+        String(a.date || '').localeCompare(String(b.date || '')) ||
+        String(a.createdAt || '').localeCompare(String(b.createdAt || '')) ||
+        String(a.id).localeCompare(String(b.id))
+    );
+    let balance = account.initialBalanceCents || 0;
+    for (const tx of sorted) {
+      balance += tx.kind === 'income' ? tx.amountCents : -tx.amountCents;
+      if (Number.isInteger(tx.balanceAfterCents)) balance = tx.balanceAfterCents;
+      result.set(tx.id, balance);
+    }
+  }
+  return result;
+}
+
+/**
  * 最近 N 个月趋势（含结束月份，按时间升序）
  * @returns {Array<{month, incomeCents, expenseCents}>}
  */

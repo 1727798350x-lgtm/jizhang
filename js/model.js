@@ -101,6 +101,10 @@ export function validateTransaction(tx, { accounts = [], categories = [] } = {})
   if (account.archived) return '该账户已归档，请选择其他账户';
   if (!DATE_RE.test(String(tx.date))) return '日期格式错误';
   if (tx.note && String(tx.note).length > 100) return '备注最多 100 字';
+  if (tx.balanceAfterCents !== undefined && tx.balanceAfterCents !== null) {
+    if (!Number.isInteger(tx.balanceAfterCents)) return '余额格式错误';
+    if (Math.abs(tx.balanceAfterCents) > 99_999_999_99) return '余额超出范围';
+  }
   return null;
 }
 

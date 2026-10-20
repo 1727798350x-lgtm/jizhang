@@ -41,6 +41,10 @@
       }
 
       const { accounts, categories, settings } = makeDefaultData();
+      const initialBalances = { cash: 500000, wechat: 1000000, alipay: 800000, bank: 5000000 };
+      for (const account of accounts) {
+        account.initialBalanceCents = initialBalances[account.type] ?? 100000;
+      }
       const today = new Date();
       const expenseCategories = categories.filter((c) => c.kind === 'expense');
       const incomeCategories = categories.filter((c) => c.kind === 'income');
