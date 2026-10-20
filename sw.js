@@ -1,6 +1,6 @@
 /** Service Worker：离线缓存 app shell */
 
-const VERSION = 'v1.1.0';
+const VERSION = 'v1.1.1';
 const CACHE_NAME = `jianming-${VERSION}`;
 
 const ASSETS = [

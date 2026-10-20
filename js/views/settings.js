@@ -5,7 +5,7 @@ import * as ui from '../ui.js';
 import * as theme from '../theme.js';
 import { h, fmtMoney, centsToInput, parseAmountToCents, todayStr } from '../util.js';
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 const THEME_OPTIONS = [
   ['system', '跟随系统'],
   ['light', '浅色'],
@@ -75,7 +75,11 @@ export function mount(root) {
             'span',
             { class: 'row-title' },
             account.name,
-            account.archived ? h('span', { class: 'badge' }, '已归档') : null
+            account.archived
+              ? h('span', { class: 'badge' }, '已归档')
+              : account.id === settings.defaultAccountId
+                ? h('span', { class: 'badge' }, '默认')
+                : null
           ),
           h('span', { class: 'row-sub' }, `余额 ${fmtMoney(balance)}`)
         ),
@@ -381,6 +385,30 @@ export function mount(root) {
       ui.field('初始余额（元）', balanceInput),
       saveBtn,
     ];
+
+    if (account && !account.archived && account.id !== store.getSettings().defaultAccountId) {
+      content.push(
+        h(
+          'button',
+          {
+            class: 'btn btn-ghost btn-block',
+            type: 'button',
+            style: { marginTop: '10px' },
+            onclick: async () => {
+              try {
+                await store.updateSettings({ defaultAccountId: account.id });
+                sheet.close();
+                ui.toast('已设为默认账户');
+                render();
+              } catch (error) {
+                ui.toast(error.message);
+              }
+            },
+          },
+          '设为默认账户'
+        )
+      );
+    }
 
     if (account) {
       content.push(
