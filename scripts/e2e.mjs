@@ -391,6 +391,54 @@ async function main() {
       '默认账户标记'
     );
 
+    await clickByText(cdp, '.row', '测试卡', false);
+    await waitSelector(cdp, '.sheet');
+    await setSheetInputs(cdp, ['测试卡', '💳', '100']);
+    await clickByText(cdp, '.sheet .btn', '保存');
+    await waitSheetClosed(cdp);
+    await waitUntil(
+      cdp,
+      `document.querySelector('.account-total .value') && document.querySelector('.account-total .value').textContent.includes('¥11.20')`,
+      '账户总余额'
+    );
+
+    await clickByText(cdp, '.row', '添加账户', false);
+    await waitSelector(cdp, '.sheet');
+    await setSheetInputs(cdp, ['临时账户', '💳', '0']);
+    await clickByText(cdp, '.sheet .btn', '保存');
+    await waitSheetClosed(cdp);
+    await waitUntil(cdp, `document.body.textContent.includes('临时账户')`, '临时账户出现');
+    await clickByText(cdp, '.row', '临时账户', false);
+    await waitSelector(cdp, '.sheet');
+    await clickByText(cdp, '.sheet .btn', '删除账户');
+    await waitSelector(cdp, '.dialog');
+    await clickByText(cdp, '.dialog .btn', '删除');
+    await waitSheetClosed(cdp);
+    await waitUntil(cdp, `!document.body.textContent.includes('临时账户')`, '临时账户已删除');
+
+    await clickByText(cdp, '.row', '银行卡', false);
+    await waitSelector(cdp, '.sheet');
+    await clickByText(cdp, '.sheet .btn', '归档账户');
+    await waitSelector(cdp, '.dialog');
+    await clickByText(cdp, '.dialog .btn', '归档');
+    await waitSheetClosed(cdp);
+    await waitUntil(
+      cdp,
+      `!document.body.textContent.includes('银行卡') && document.body.textContent.includes('查看已归档账户')`,
+      '归档账户已隐藏'
+    );
+    await clickByText(cdp, '.row', '查看已归档账户', false);
+    await waitUntil(
+      cdp,
+      `[...document.querySelectorAll('.row')].some((el) => el.textContent.includes('银行卡') && el.textContent.includes('已归档'))`,
+      '展开归档账户'
+    );
+    await clickByText(cdp, '.row', '银行卡', false);
+    await waitSelector(cdp, '.sheet');
+    await clickByText(cdp, '.sheet .btn', '恢复账户');
+    await waitSheetClosed(cdp);
+    await waitUntil(cdp, `document.body.textContent.includes('银行卡')`, '恢复账户');
+
     await clickByText(cdp, '.row', '添加分类', false);
     await waitSelector(cdp, '.sheet');
     await setSheetInputs(cdp, ['宠物', '🐱']);

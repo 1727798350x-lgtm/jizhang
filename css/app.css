@@ -837,6 +837,17 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 .chip.has-note { color: var(--primary); }
 .stats-kind { margin-bottom: 14px; }
 
+.account-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+}
+.account-total .label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 2px; }
+.account-total .value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.row-toggle .row-title { color: var(--text-3); font-weight: 400; font-size: 13px; }
+
 /* ===================== 桌面适配 ===================== */
 @media (min-width: 600px) {
   body { background: #e8ecf3; }

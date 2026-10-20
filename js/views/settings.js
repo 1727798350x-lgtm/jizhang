@@ -5,7 +5,7 @@ import * as ui from '../ui.js';
 import * as theme from '../theme.js';
 import { h, fmtMoney, centsToInput, parseAmountToCents, todayStr } from '../util.js';
 
-const APP_VERSION = '1.1.4';
+const APP_VERSION = '1.1.5';
 const THEME_OPTIONS = [
   ['system', '跟随系统'],
   ['light', '浅色'],
@@ -14,6 +14,7 @@ const THEME_OPTIONS = [
 
 export function mount(root) {
   let categoryKind = 'expense';
+  let showArchived = false;
   let mounted = true;
 
   function render() {
@@ -55,10 +56,18 @@ export function mount(root) {
     );
 
     /* ---------- 账户 ---------- */
-    const accountList = [...store.allAccounts()].sort(
+    const allAccounts = [...store.allAccounts()].sort(
       (a, b) => Number(a.archived) - Number(b.archived)
     );
-    const accountRows = accountList.map((account) => {
+    const activeAccounts = allAccounts.filter((a) => !a.archived);
+    const archivedCount = allAccounts.length - activeAccounts.length;
+    const totalBalanceCents = activeAccounts.reduce(
+      (sum, account) => sum + store.accountBalanceCents(account.id),
+      0
+    );
+    const visibleAccounts = showArchived ? allAccounts : activeAccounts;
+
+    const accountRows = visibleAccounts.map((account) => {
       const balance = store.accountBalanceCents(account.id);
       return h(
         'button',
@@ -88,10 +97,49 @@ export function mount(root) {
     });
     accountRows.push(addRow('添加账户', () => openAccountSheet(null)));
 
+    if (archivedCount > 0) {
+      accountRows.push(
+        h(
+          'button',
+          {
+            class: 'row row-toggle',
+            type: 'button',
+            onclick: () => {
+              showArchived = !showArchived;
+              render();
+            },
+          },
+          h('span', { class: 'row-icon' }, showArchived ? '▾' : '▸'),
+          h(
+            'span',
+            { class: 'row-main' },
+            h(
+              'span',
+              { class: 'row-title' },
+              showArchived ? '收起已归档账户' : `查看已归档账户（${archivedCount}）`
+            )
+          )
+        )
+      );
+    }
+
+    const accountTotal = h(
+      'section',
+      { class: 'card account-total' },
+      h(
+        'span',
+        {},
+        h('span', { class: 'label' }, '账户总余额'),
+        h('strong', { class: 'value num' }, fmtMoney(totalBalanceCents))
+      ),
+      h('span', { class: 'faint', style: { fontSize: '12px' } }, `${activeAccounts.length} 个账户`)
+    );
+
     const accountSection = h(
       'section',
       { class: 'section' },
       h('div', { class: 'section-title' }, '账户'),
+      accountTotal,
       h('div', { class: 'card card--list' }, accountRows)
     );
 
@@ -345,7 +393,7 @@ export function mount(root) {
       maxlength: 4,
     });
     const balanceInput = ui.textInput({
-      value: account ? centsToInput(account.initialBalanceCents) : '0.00',
+      value: account ? centsToInput(store.accountBalanceCents(account.id)) : '0.00',
       placeholder: '0.00',
     });
     balanceInput.inputMode = 'decimal';
@@ -358,15 +406,17 @@ export function mount(root) {
         onclick: async () => {
           const cents = parseAmountToCents(balanceInput.value || '0');
           if (cents === null) {
-            ui.toast('初始余额格式不正确');
+            ui.toast('余额格式不正确');
             return;
           }
+          const current = account ? store.accountBalanceCents(account.id) : 0;
+          const base = account ? account.initialBalanceCents || 0 : 0;
           try {
             await store.saveAccount({
               id: account ? account.id : undefined,
               name: nameInput.value,
               emoji: emojiInput.value,
-              initialBalanceCents: cents,
+              initialBalanceCents: cents - (current - base),
             });
             sheet.close();
             ui.toast('已保存');
@@ -382,7 +432,12 @@ export function mount(root) {
     const content = [
       ui.field('账户名称', nameInput),
       ui.field('图标（一个 emoji）', emojiInput),
-      ui.field('初始余额（元）', balanceInput),
+      ui.field('当前余额（元）', balanceInput),
+      h(
+        'p',
+        { class: 'faint', style: { fontSize: '12px', marginTop: '-6px', marginBottom: '14px', lineHeight: 1.5 } },
+        '填这个账户现在的实际余额，之后按收支自动增减；账户总余额会跟着更新。'
+      ),
       saveBtn,
     ];
 
@@ -415,7 +470,7 @@ export function mount(root) {
         h(
           'button',
           {
-            class: 'btn btn-danger btn-block',
+            class: 'btn btn-ghost btn-block',
             type: 'button',
             style: { marginTop: '10px' },
             onclick: async () => {
@@ -427,7 +482,7 @@ export function mount(root) {
                   message:
                     count > 0
                       ? `该账户下有 ${count} 条记录，归档后不能再记账，但历史记录会保留。`
-                      : '归档后该账户不再出现在记账页，可随时恢复。',
+                      : '归档后账户会从列表隐藏，可点「查看已归档账户」恢复。',
                   confirmText: '归档',
                 });
                 if (!confirmed) return;
@@ -443,6 +498,39 @@ export function mount(root) {
             },
           },
           account.archived ? '恢复账户' : '归档账户'
+        )
+      );
+
+      content.push(
+        h(
+          'button',
+          {
+            class: 'btn btn-danger btn-block',
+            type: 'button',
+            style: { marginTop: '10px' },
+            onclick: async () => {
+              const count = store.countTransactionsByAccount(account.id);
+              const confirmed = await ui.confirmDialog({
+                title: '删除账户',
+                message:
+                  count > 0
+                    ? `该账户有 ${count} 条记录，删除账户会同时删除这些记录，且无法恢复。若想保留记录，请改用「归档」。确定删除吗？`
+                    : '删除后无法恢复，确定吗？',
+                confirmText: '删除',
+                danger: true,
+              });
+              if (!confirmed) return;
+              try {
+                await store.deleteAccount(account.id);
+                sheet.close();
+                ui.toast('已删除账户');
+                render();
+              } catch (error) {
+                ui.toast(error.message);
+              }
+            },
+          },
+          '删除账户'
         )
       );
     }

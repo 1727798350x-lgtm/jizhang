@@ -248,6 +248,31 @@ export async function setAccountArchived(id, archived) {
   return next;
 }
 
+/** 删除账户（连同该账户下的记录）；至少保留一个可用账户 */
+export async function deleteAccount(id) {
+  const account = accountById(id);
+  if (!account) throw new Error('账户不存在');
+  if (!account.archived) {
+    const others = state.accounts.filter((a) => !a.archived && a.id !== id);
+    if (others.length === 0) throw new Error('至少保留一个账户');
+  }
+  const transactionIds = state.transactions
+    .filter((t) => t.accountId === id)
+    .map((t) => t.id);
+  for (const transactionId of transactionIds) {
+    await db.del('transactions', transactionId);
+  }
+  await db.del('accounts', id);
+  state.transactions = state.transactions.filter((t) => t.accountId !== id);
+  state.accounts = state.accounts.filter((a) => a.id !== id);
+  invalidateRunningBalances();
+  if (state.settings.defaultAccountId === id) {
+    const next = state.accounts.find((a) => !a.archived) || state.accounts[0];
+    await updateSettings({ defaultAccountId: next ? next.id : null });
+  }
+  return { removedTransactions: transactionIds.length };
+}
+
 /* ---------------- 分类 ---------------- */
 
 export async function saveCategory(input) {

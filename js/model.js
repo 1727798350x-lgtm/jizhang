@@ -29,7 +29,6 @@ const INCOME_CATEGORIES = [
 ];
 
 const DEFAULT_ACCOUNTS = [
-  ['现金', '💵', 'cash'],
   ['微信', '💬', 'wechat'],
   ['支付宝', '🔷', 'alipay'],
   ['银行卡', '💳', 'bank'],
