@@ -98,8 +98,8 @@ export function mount(root, { navigate, query }) {
         h(
           'div',
           { class: 'summary-line' },
-          h('span', { class: 'label' }, '结余'),
-          h('span', { class: 'value num' }, fmtMoney(totals.balanceCents))
+          h('span', { class: 'label' }, '总余额'),
+          h('span', { class: 'value num' }, fmtMoney(store.totalBalanceCents()))
         )
       )
     );
@@ -237,8 +237,7 @@ function txItem(tx, navigate) {
   const category = store.categoryById(tx.categoryId);
   const sign = tx.kind === 'expense' ? '-' : '+';
   const sub = tx.note && tx.note.trim() ? tx.note.trim() : null;
-  const balance = store.runningBalanceCents(tx.id);
-  const manual = Number.isInteger(tx.balanceAfterCents);
+  const balance = store.totalRunningBalanceCents(tx.id);
 
   return h(
     'button',
@@ -269,10 +268,10 @@ function txItem(tx, navigate) {
         : h(
             'span',
             {
-              class: 'tx-balance num' + (manual ? ' manual' : ''),
-              title: manual ? '手动填写的余额' : '自动计算的余额',
+              class: 'tx-balance num',
+              title: '全部账户合计的余额',
             },
-            `余 ${fmtMoney(balance)}`
+            `总 ${fmtMoney(balance)}`
           )
     )
   );

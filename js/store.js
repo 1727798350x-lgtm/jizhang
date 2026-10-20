@@ -14,9 +14,11 @@ const state = {
 };
 
 let runningBalanceCache = null;
+let totalRunningBalanceCache = null;
 
 function invalidateRunningBalances() {
   runningBalanceCache = null;
+  totalRunningBalanceCache = null;
 }
 
 export function runningBalanceCents(transactionId) {
@@ -24,6 +26,25 @@ export function runningBalanceCents(transactionId) {
     runningBalanceCache = stats.computeRunningBalances(state.accounts, state.transactions);
   }
   const value = runningBalanceCache.get(transactionId);
+  return Number.isInteger(value) ? value : null;
+}
+
+/** 全部可用账户的当前总余额 */
+export function totalBalanceCents() {
+  return state.accounts
+    .filter((account) => !account.archived)
+    .reduce((sum, account) => sum + accountBalanceCents(account.id), 0);
+}
+
+/** 某笔记录之后全部可用账户的合计余额 */
+export function totalRunningBalanceCents(transactionId) {
+  if (!totalRunningBalanceCache) {
+    totalRunningBalanceCache = stats.computeTotalRunningBalances(
+      state.accounts,
+      state.transactions
+    );
+  }
+  const value = totalRunningBalanceCache.get(transactionId);
   return Number.isInteger(value) ? value : null;
 }
 
@@ -245,6 +266,7 @@ export async function setAccountArchived(id, archived) {
   const next = { ...account, archived: Boolean(archived) };
   await db.put('accounts', next);
   state.accounts = sortByOrder(state.accounts.map((a) => (a.id === id ? next : a)));
+  invalidateRunningBalances();
   return next;
 }
 

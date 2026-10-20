@@ -97,6 +97,33 @@ export function categoryBreakdown(transactions, categories, kind, month = null) 
   return { items, totalCents, totalCount };
 }
 
+function compareChronologically(a, b) {
+  return (
+    String(a.date || '').localeCompare(String(b.date || '')) ||
+    String(a.createdAt || '').localeCompare(String(b.createdAt || '')) ||
+    String(a.id).localeCompare(String(b.id))
+  );
+}
+
+/**
+ * 计算每笔记录之后“全部可用账户”的合计余额（总余额）
+ * 只统计未归档账户的初始余额与记录；忽略单账户的手填余额锚点。
+ * @returns {Map<string, number>} transactionId -> 总余额（分）
+ */
+export function computeTotalRunningBalances(accounts, transactions) {
+  const active = accounts.filter((a) => !a.archived);
+  const activeIds = new Set(active.map((a) => a.id));
+  let balance = active.reduce((sum, a) => sum + (a.initialBalanceCents || 0), 0);
+  const list = transactions.filter((t) => activeIds.has(t.accountId)).sort(compareChronologically);
+
+  const result = new Map();
+  for (const tx of list) {
+    balance += tx.kind === 'income' ? tx.amountCents : -tx.amountCents;
+    result.set(tx.id, balance);
+  }
+  return result;
+}
+
 /**
  * 计算每笔记录之后该账户的余额（含手动填写的余额锚点）
  * 规则：按日期、创建时间升序；默认 = 上一笔余额 + 本笔收支；
@@ -115,12 +142,7 @@ export function computeRunningBalances(accounts, transactions) {
   for (const [accountId, list] of byAccount) {
     const account = accounts.find((a) => a.id === accountId);
     if (!account) continue;
-    const sorted = [...list].sort(
-      (a, b) =>
-        String(a.date || '').localeCompare(String(b.date || '')) ||
-        String(a.createdAt || '').localeCompare(String(b.createdAt || '')) ||
-        String(a.id).localeCompare(String(b.id))
-    );
+    const sorted = [...list].sort(compareChronologically);
     let balance = account.initialBalanceCents || 0;
     for (const tx of sorted) {
       balance += tx.kind === 'income' ? tx.amountCents : -tx.amountCents;

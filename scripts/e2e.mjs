@@ -330,7 +330,7 @@ async function main() {
     await waitUntil(
       cdp,
       `document.querySelector('.tx-balance') && document.querySelector('.tx-balance').textContent.includes('-¥12.34')`,
-      '自动计算的余额'
+      '全部账户合计余额'
     );
     console.log('    通过：支出已保存，并显示自动余额');
 
@@ -342,7 +342,7 @@ async function main() {
     await clickByText(cdp, '.entry-head button', '保存');
     await waitUntil(cdp, `document.body.textContent.includes('5,000.00')`, '收入出现在明细');
     await expectTotals(cdp, { expense: '¥12.34', income: '¥5,000.00', balance: '¥4,987.66' });
-    await waitUntil(cdp, `document.body.textContent.includes('余 ¥4,987.66')`, '收入后的余额');
+    await waitUntil(cdp, `document.body.textContent.includes('总 ¥4,987.66')`, '收入后的总余额');
     console.log('    通过：收入已保存，余额自动累计');
 
     console.log('4/10 编辑支出：12.34 → 88.80');
@@ -352,7 +352,7 @@ async function main() {
     await clickByText(cdp, '.entry-head button', '保存');
     await waitUntil(cdp, `document.body.textContent.includes('88.80')`, '修改后的金额');
     await expectTotals(cdp, { expense: '¥88.80', income: '¥5,000.00', balance: '¥4,911.20' });
-    await waitUntil(cdp, `document.body.textContent.includes('余 ¥4,911.20')`, '编辑后的余额');
+    await waitUntil(cdp, `document.body.textContent.includes('总 ¥4,911.20')`, '编辑后的总余额');
     console.log('    通过：编辑生效，余额随之重算');
 
     console.log('5/10 删除收入 5000');
@@ -363,7 +363,7 @@ async function main() {
     await clickByText(cdp, '.dialog .btn', '删除');
     await waitUntil(cdp, `!document.body.textContent.includes('5,000.00')`, '收入被删除');
     await expectTotals(cdp, { expense: '¥88.80', income: '¥0.00', balance: '-¥88.80' });
-    await waitUntil(cdp, `document.body.textContent.includes('余 -¥88.80')`, '删除后的余额');
+    await waitUntil(cdp, `document.body.textContent.includes('总 -¥88.80')`, '删除后的总余额');
     assert.equal(
       await cdp.evaluate(`document.querySelectorAll('.tx-item').length`),
       1,
@@ -504,7 +504,7 @@ async function main() {
     );
     await go(cdp, '#/detail');
     await waitUntil(cdp, `document.querySelectorAll('.tx-item').length === 1`, '导入后数据被覆盖');
-    await expectTotals(cdp, { expense: '¥88.80', income: '¥0.00', balance: '-¥88.80' });
+    await expectTotals(cdp, { expense: '¥88.80', income: '¥0.00', balance: '¥11.20' });
     console.log('    通过：导入成功且覆盖了当前数据');
 
     console.log('10/10 时间段筛选');
@@ -519,7 +519,7 @@ async function main() {
       '时间段标签'
     );
     await waitUntil(cdp, `document.querySelectorAll('.tx-item').length === 0`, '时间段过滤');
-    await expectTotals(cdp, { expense: '¥0.00', income: '¥0.00', balance: '¥0.00' });
+    await expectTotals(cdp, { expense: '¥0.00', income: '¥0.00', balance: '¥11.20' });
     await clickByText(cdp, '.btn-now', '本月');
     await waitUntil(cdp, `document.querySelectorAll('.tx-item').length === 1`, '恢复本月');
     console.log('    通过：时间段筛选与恢复本月');

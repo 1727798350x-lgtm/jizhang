@@ -7,6 +7,7 @@ import {
   categoryBreakdown,
   monthlyTrend,
   computeRunningBalances,
+  computeTotalRunningBalances,
   transactionsInRange,
   rangeTotals,
 } from '../js/stats.js';
@@ -148,6 +149,21 @@ test('computeRunningBalances 忽略未知账户的记录', () => {
     { id: 'z', kind: 'expense', amountCents: 100, accountId: 'ghost', date: '2026-10-01' },
   ]);
   assert.equal(map.has('z'), false);
+});
+
+test('computeTotalRunningBalances 汇总全部可用账户', () => {
+  const accA = { id: 'ta', initialBalanceCents: 1000, archived: false };
+  const accB = { id: 'tb', initialBalanceCents: 500, archived: false };
+  const archived = { id: 'tc', initialBalanceCents: 9999, archived: true };
+  const txs = [
+    { id: 't1', kind: 'expense', amountCents: 200, accountId: 'ta', date: '2026-10-01', createdAt: '1' },
+    { id: 't2', kind: 'income', amountCents: 300, accountId: 'tb', date: '2026-10-02', createdAt: '2' },
+    { id: 't3', kind: 'expense', amountCents: 100, accountId: 'tc', date: '2026-10-03', createdAt: '3' },
+  ];
+  const map = computeTotalRunningBalances([accA, accB, archived], txs);
+  assert.equal(map.get('t1'), 1300);
+  assert.equal(map.get('t2'), 1600);
+  assert.equal(map.has('t3'), false);
 });
 
 test('transactionsInRange / rangeTotals 按闭区间筛选', () => {

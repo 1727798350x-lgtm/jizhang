@@ -5,7 +5,7 @@ import * as ui from '../ui.js';
 import * as theme from '../theme.js';
 import { h, fmtMoney, centsToInput, parseAmountToCents, todayStr } from '../util.js';
 
-const APP_VERSION = '1.1.5';
+const APP_VERSION = '1.1.6';
 const THEME_OPTIONS = [
   ['system', '跟随系统'],
   ['light', '浅色'],
