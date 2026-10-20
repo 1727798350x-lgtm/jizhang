@@ -122,6 +122,14 @@ export function transactionsOfMonth(month) {
   return state.transactions.filter((t) => t.date && t.date.slice(0, 7) === month);
 }
 
+export function transactionsInRange(from, to) {
+  return stats.transactionsInRange(state.transactions, from, to);
+}
+
+export function totalsForRange(from, to) {
+  return stats.rangeTotals(state.transactions, from, to);
+}
+
 export function totalsForMonth(month) {
   return stats.monthTotals(state.transactions, month);
 }

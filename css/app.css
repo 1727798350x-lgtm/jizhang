@@ -224,6 +224,27 @@ h1, h2, h3, p { margin: 0; }
   padding: 8px 6px;
 }
 
+/* ===================== 明细时间段选择 ===================== */
+.range-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 64vw;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+.range-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.range-switch .row-chev { font-size: 16px; color: var(--text-3); }
+.range-fields { display: flex; gap: 10px; }
+.range-field { flex: 1; min-width: 0; }
+.range-quick { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+
 /* ===================== 明细页 ===================== */
 .summary {
   display: flex;

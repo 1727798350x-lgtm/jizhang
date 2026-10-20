@@ -1,28 +1,45 @@
-/** 明细页：月份切换、收支汇总、按日分组流水 */
+/** 明细页：时间段筛选、收支汇总、按日分组流水 */
 
 import * as store from '../store.js';
-import { h, fmtCents, fmtMoney, monthLabel, addMonths, monthOf, todayStr, dayLabel } from '../util.js';
+import * as ui from '../ui.js';
+import {
+  h,
+  fmtCents,
+  fmtMoney,
+  todayStr,
+  dayLabel,
+  isValidDate,
+  monthRange,
+  formatRangeLabel,
+  addMonths,
+  addDays,
+} from '../util.js';
 
-let currentMonth = null;
+let currentRange = null;
+
+function defaultRange() {
+  const today = todayStr();
+  return { from: `${today.slice(0, 7)}-01`, to: today };
+}
+
+function sameRange(a, b) {
+  return Boolean(a && b && a.from === b.from && a.to === b.to);
+}
 
 export function mount(root, { navigate, query }) {
-  if (query && query.m && /^\d{4}-\d{2}$/.test(query.m)) currentMonth = query.m;
-  if (!currentMonth) currentMonth = monthOf(todayStr());
-
-  function changeMonth(delta) {
-    currentMonth = addMonths(currentMonth, delta);
-    render();
+  if (query && query.d && isValidDate(query.d)) {
+    const alreadyVisible =
+      currentRange && query.d >= currentRange.from && query.d <= currentRange.to;
+    if (!alreadyVisible) currentRange = monthRange(query.d);
   }
-
-  function goCurrentMonth() {
-    currentMonth = monthOf(todayStr());
-    render();
-  }
+  if (!currentRange) currentRange = defaultRange();
 
   function render() {
-    const totals = store.totalsForMonth(currentMonth);
-    const transactions = store.transactionsOfMonth(currentMonth);
-    const isCurrent = currentMonth === monthOf(todayStr());
+    const from = currentRange.from;
+    const to = currentRange.to;
+    const totals = store.totalsForRange(from, to);
+    const transactions = store.transactionsInRange(from, to);
+    const isDefault = sameRange(currentRange, defaultRange());
 
     const head = h(
       'header',
@@ -31,16 +48,32 @@ export function mount(root, { navigate, query }) {
         'div',
         { class: 'page-head-left' },
         h('h1', { class: 'page-title' }, '明细'),
-        isCurrent
+        isDefault
           ? null
-          : h('button', { class: 'btn-now', type: 'button', onclick: goCurrentMonth }, '回到本月')
+          : h(
+              'button',
+              {
+                class: 'btn-now',
+                type: 'button',
+                onclick: () => {
+                  currentRange = defaultRange();
+                  render();
+                },
+              },
+              '本月'
+            )
       ),
       h(
-        'div',
-        { class: 'month-switch' },
-        h('button', { type: 'button', 'aria-label': '上个月', onclick: () => changeMonth(-1) }, '‹'),
-        h('span', { class: 'month-label' }, monthLabel(currentMonth)),
-        h('button', { type: 'button', 'aria-label': '下个月', onclick: () => changeMonth(1) }, '›')
+        'button',
+        {
+          class: 'range-switch',
+          type: 'button',
+          'aria-label': '选择时间段',
+          onclick: openRangeSheet,
+        },
+        h('span', {}, '📅'),
+        h('span', { class: 'range-label' }, formatRangeLabel(from, to)),
+        h('span', { class: 'row-chev' }, '›')
       )
     );
 
@@ -50,7 +83,7 @@ export function mount(root, { navigate, query }) {
       h(
         'div',
         { class: 'summary-main' },
-        h('span', { class: 'label' }, '本月支出'),
+        h('span', { class: 'label' }, '支出'),
         h('span', { class: 'value money-expense num' }, fmtMoney(totals.expenseCents))
       ),
       h(
@@ -79,7 +112,7 @@ export function mount(root, { navigate, query }) {
           'div',
           { class: 'empty' },
           h('span', { class: 'empty-emoji' }, '📒'),
-          h('p', { class: 'empty-title' }, '这个月还没有记账'),
+          h('p', { class: 'empty-title' }, isDefault ? '这个月还没有记账' : '这个时间段还没有记账'),
           h(
             'button',
             { class: 'btn btn-primary', type: 'button', onclick: () => navigate('#/entry') },
@@ -113,6 +146,84 @@ export function mount(root, { navigate, query }) {
     }
 
     root.replaceChildren(head, summary, list);
+  }
+
+  function openRangeSheet() {
+    const fromInput = h('input', {
+      class: 'input',
+      type: 'date',
+      value: currentRange.from,
+      'aria-label': '开始日期',
+    });
+    const toInput = h('input', {
+      class: 'input',
+      type: 'date',
+      value: currentRange.to,
+      'aria-label': '结束日期',
+    });
+
+    const today = todayStr();
+    const prevMonth = addMonths(today.slice(0, 7), -1);
+    const quickOptions = [
+      ['今天', () => ({ from: today, to: today })],
+      ['近 7 天', () => ({ from: addDays(today, -6), to: today })],
+      ['近 30 天', () => ({ from: addDays(today, -29), to: today })],
+      ['本月', () => defaultRange()],
+      ['上月', () => monthRange(`${prevMonth}-01`)],
+    ];
+
+    const quick = h(
+      'div',
+      { class: 'range-quick' },
+      quickOptions.map(([label, makeRange]) =>
+        h(
+          'button',
+          {
+            class: 'chip',
+            type: 'button',
+            onclick: () => {
+              const range = makeRange();
+              fromInput.value = range.from;
+              toInput.value = range.to;
+            },
+          },
+          label
+        )
+      )
+    );
+
+    const fields = h(
+      'div',
+      { class: 'range-fields' },
+      h('label', { class: 'field range-field' }, h('span', {}, '开始日期'), fromInput),
+      h('label', { class: 'field range-field' }, h('span', {}, '结束日期'), toInput)
+    );
+
+    const done = h(
+      'button',
+      {
+        class: 'btn btn-primary btn-block',
+        type: 'button',
+        onclick: () => {
+          const from = fromInput.value;
+          const to = toInput.value;
+          if (!isValidDate(from) || !isValidDate(to)) {
+            ui.toast('请选择开始和结束日期');
+            return;
+          }
+          if (from > to) {
+            ui.toast('开始日期不能晚于结束日期');
+            return;
+          }
+          currentRange = { from, to };
+          sheet.close();
+          render();
+        },
+      },
+      '完成'
+    );
+
+    const sheet = ui.showSheet({ title: '选择时间段', content: [fields, quick, done] });
   }
 
   render();

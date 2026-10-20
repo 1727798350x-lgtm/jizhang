@@ -7,7 +7,6 @@ import {
   centsToInput,
   todayStr,
   isValidDate,
-  monthOf,
 } from '../util.js';
 import * as ui from '../ui.js';
 
@@ -262,7 +261,7 @@ export function mount(root, { navigate, query }) {
           editing && Number.isInteger(editing.balanceAfterCents) ? editing.balanceAfterCents : null,
       });
       ui.toast(editing ? '已保存' : '已记一笔');
-      navigate('#/detail?m=' + monthOf(date));
+      navigate('#/detail?d=' + date);
     } catch (error) {
       ui.toast(error.message);
     } finally {

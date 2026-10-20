@@ -83,6 +83,27 @@ export function addMonths(month, delta) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
 }
 
+export function addDays(dateStr, delta) {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  return todayStr(new Date(y, m - 1, d + delta));
+}
+
+/** 某日期所在月份的第一天与最后一天 */
+export function monthRange(dateStr) {
+  const [y, m] = String(dateStr).slice(0, 7).split('-').map(Number);
+  const last = new Date(y, m, 0).getDate();
+  return { from: `${y}-${pad2(m)}-01`, to: `${y}-${pad2(m)}-${pad2(last)}` };
+}
+
+/** 时间段显示：不显示年份，如 "10月1日 - 10月20日" */
+export function formatRangeLabel(from, to) {
+  const [, fm, fd] = String(from).split('-').map(Number);
+  const [, tm, td] = String(to).split('-').map(Number);
+  const left = `${fm}月${fd}日`;
+  if (from === to) return left;
+  return `${left} - ${tm}月${td}日`;
+}
+
 export function monthLabel(month) {
   const [y, m] = String(month).split('-').map(Number);
   return `${y}年${m}月`;

@@ -1,7 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { monthTotals, groupByDay, categoryBreakdown, monthlyTrend, computeRunningBalances } from '../js/stats.js';
+import {
+  monthTotals,
+  groupByDay,
+  categoryBreakdown,
+  monthlyTrend,
+  computeRunningBalances,
+  transactionsInRange,
+  rangeTotals,
+} from '../js/stats.js';
 
 const categories = [
   { id: 'c-food', kind: 'expense', name: '餐饮', emoji: '🍜', color: '#ff7a59' },
@@ -140,4 +148,26 @@ test('computeRunningBalances 忽略未知账户的记录', () => {
     { id: 'z', kind: 'expense', amountCents: 100, accountId: 'ghost', date: '2026-10-01' },
   ]);
   assert.equal(map.has('z'), false);
+});
+
+test('transactionsInRange / rangeTotals 按闭区间筛选', () => {
+  const txs = [
+    { id: 'r1', kind: 'expense', amountCents: 100, categoryId: 'c-food', date: '2026-10-01' },
+    { id: 'r2', kind: 'income', amountCents: 500, categoryId: 'c-salary', date: '2026-10-10' },
+    { id: 'r3', kind: 'expense', amountCents: 200, categoryId: 'c-food', date: '2026-10-20' },
+  ];
+  assert.deepEqual(
+    transactionsInRange(txs, '2026-10-01', '2026-10-10').map((t) => t.id),
+    ['r1', 'r2']
+  );
+  assert.deepEqual(rangeTotals(txs, '2026-10-01', '2026-10-10'), {
+    incomeCents: 500,
+    expenseCents: 100,
+    balanceCents: 400,
+  });
+  assert.deepEqual(rangeTotals(txs, '2026-10-11', '2026-10-19'), {
+    incomeCents: 0,
+    expenseCents: 0,
+    balanceCents: 0,
+  });
 });

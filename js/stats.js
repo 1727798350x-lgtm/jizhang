@@ -7,6 +7,28 @@ export function filterByMonth(transactions, month) {
   return transactions.filter((t) => t.date && t.date.slice(0, 7) === month);
 }
 
+/** 选出 [from, to] 闭区间内的记录（日期均为 YYYY-MM-DD） */
+export function transactionsInRange(transactions, from, to) {
+  if (!DATE_RE.test(String(from)) || !DATE_RE.test(String(to))) return [];
+  return transactions.filter((t) => t.date && t.date >= from && t.date <= to);
+}
+
+/** [from, to] 闭区间的收支汇总 */
+export function rangeTotals(transactions, from, to) {
+  let incomeCents = 0;
+  let expenseCents = 0;
+  if (!DATE_RE.test(String(from)) || !DATE_RE.test(String(to))) {
+    return { incomeCents, expenseCents, balanceCents: 0 };
+  }
+  for (const t of transactions) {
+    if (!DATE_RE.test(String(t.date))) continue;
+    if (t.date < from || t.date > to) continue;
+    if (t.kind === 'income') incomeCents += t.amountCents;
+    else if (t.kind === 'expense') expenseCents += t.amountCents;
+  }
+  return { incomeCents, expenseCents, balanceCents: incomeCents - expenseCents };
+}
+
 export function monthTotals(transactions, month) {
   let incomeCents = 0;
   let expenseCents = 0;

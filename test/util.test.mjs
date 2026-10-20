@@ -8,6 +8,9 @@ import {
   fmtMoney,
   centsToInput,
   addMonths,
+  addDays,
+  monthRange,
+  formatRangeLabel,
   monthOf,
   isValidDate,
   dayLabel,
@@ -51,6 +54,15 @@ test('addMonths 跨年计算', () => {
   assert.equal(addMonths('2026-01', -1), '2025-12');
   assert.equal(addMonths('2026-12', 1), '2027-01');
   assert.equal(addMonths('2026-03', -14), '2025-01');
+});
+
+test('时间段工具：加天数、月份边界、无年份标签', () => {
+  assert.equal(addDays('2026-10-20', -6), '2026-10-14');
+  assert.equal(addDays('2026-01-02', -3), '2025-12-30');
+  assert.deepEqual(monthRange('2026-02-15'), { from: '2026-02-01', to: '2026-02-28' });
+  assert.deepEqual(monthRange('2024-02-10'), { from: '2024-02-01', to: '2024-02-29' });
+  assert.equal(formatRangeLabel('2026-10-01', '2026-10-20'), '10月1日 - 10月20日');
+  assert.equal(formatRangeLabel('2026-10-20', '2026-10-20'), '10月20日');
 });
 
 test('monthOf / isValidDate', () => {
